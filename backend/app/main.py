@@ -1,7 +1,19 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+from app.util.init_db import create_tables
 
-app = FastAPI(title="Resource Allocation API")
+@asynccontextmanager
+async def lifespan(app:FastAPI):
+    create_tables()
+    yield
+
+
+app = FastAPI(
+    title="Resource Allocation API",        
+    root_path="/api",   
+    lifespan=lifespan          
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -12,5 +24,5 @@ app.add_middleware(
 )
 
 @app.get("/health")
-def health():
-    return {"status": "pootestugjsbgjhagjoop"}
+def health():   
+    return {"status": "SUCCESS"}

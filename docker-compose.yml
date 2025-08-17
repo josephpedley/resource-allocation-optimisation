@@ -4,13 +4,13 @@ services:
   traefik:
     image: traefik:v2.11
     command:
-      - "--api.insecure=true"                  # Dev dashboard at :8080
+      - "--api.insecure=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
     ports:
-      - "80:80"     # frontend/backend routed here
-      - "8080:8080" # Traefik dashboard (dev only)
+      - "80:80"
+      - "8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
@@ -24,7 +24,7 @@ services:
       - ./frontend:/app
       - /app/node_modules
     environment:
-      - CHOKIDAR_USEPOLLING=true     # 👈 fixes file watching on Windows/macOS
+      - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true
     expose:
       - "5173"
@@ -37,8 +37,28 @@ services:
       - web
     depends_on:
       - traefik
+      
+  db:
+    image: postgres:16-alpine
+    env_file:
+      - .env              
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    ports:
+      - "5432:5432"
+    networks:
+      - web
 
   backend:
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}  
     build:
       context: ./backend
       dockerfile: Dockerfile.dev
@@ -51,13 +71,15 @@ services:
       - "traefik.http.routers.api.rule=Host(`localhost`) && PathPrefix(`/api`)"
       - "traefik.http.routers.api.entrypoints=web"
       - "traefik.http.services.api.loadbalancer.server.port=8000"
-      - "traefik.http.middlewares.api-strip.stripprefix.prefixes=/api"
-      - "traefik.http.routers.api.middlewares=api-strip"
     networks:
       - web
     depends_on:
+      - db
       - traefik
 
 networks:
   web:
     driver: bridge
+
+volumes:
+  postgres_data:

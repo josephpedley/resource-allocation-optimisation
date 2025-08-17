@@ -7,13 +7,14 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-ackend/__pycache__/
+backendkend/*.__pycache__/
 backend/*.pyc
 backend/*.pyo
 backend/.pytest_cache/
 backend/.mypy_cache/
-backend/.hypothesis/
+backend/.hypothesis/    
 backend/.venv/
 backend/env/
 backend/venv/
 
+.env
